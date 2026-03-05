@@ -82,3 +82,73 @@ class GetUserView(APIView):
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GetOrCreateUserByPhoneView(APIView):
+    permission_classes = [AllowAny]
+
+    """
+    POST /api/users/get-or-create
+    Gets existing user by phone or creates a new one if doesn't exist.
+    
+    Request body:
+    {
+        "phone": "+1234567890",
+        "name": "John Doe",        (optional, used only if creating new user)
+        "email": "john@example.com" (optional, used only if creating new user)
+    }
+    
+    Response:
+    {
+        "user_id": "uuid-here",
+        "phone": "+1234567890",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "created": true/false  (true if new user was created, false if existing)
+    }
+    """
+    def post(self, request):
+        phone = request.data.get("phone")
+        
+        if not phone:
+            return Response(
+                {"error": "phone is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Try to get existing user
+        try:
+            user = User.objects.get(phone=phone)
+            return Response(
+                {
+                    "user_id": str(user.id),
+                    "phone": user.phone,
+                    "name": user.name,
+                    "email": user.email,
+                    "created": False
+                },
+                status=status.HTTP_200_OK
+            )
+        except User.DoesNotExist:
+            # Create new user
+            name = request.data.get("name", f"User {phone}")
+            email = request.data.get("email", f"{phone.replace('+', '')}@safesphere.app")
+            device_id = request.data.get("device_id", "")
+            
+            user = User.objects.create(
+                phone=phone,
+                name=name,
+                email=email,
+                device_id=device_id
+            )
+            
+            return Response(
+                {
+                    "user_id": str(user.id),
+                    "phone": user.phone,
+                    "name": user.name,
+                    "email": user.email,
+                    "created": True
+                },
+                status=status.HTTP_201_CREATED
+            )
