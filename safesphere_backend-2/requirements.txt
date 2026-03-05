@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────
+#  SafeSphere Backend – Python Dependencies
+#
+#  Install:  pip install -r requirements.txt
+#
+#  DATABASE  : SQLite (built into Python – NO extra package needed)
+#  STORAGE   : local=no extras  |  cloudinary=cloudinary package
+#  AI        : google-generativeai (Gemini API)
+# ─────────────────────────────────────────────────────────────────
+
+# Django core
+Django==4.2.9
+djangorestframework==3.14.0
+
+# Environment variables loader
+python-dotenv==1.0.0
+
+# Cross-origin requests (frontend <-> backend)
+django-cors-headers==4.3.1
+
+# Image/file handling
+Pillow>=10.4.0
+
+# HTTP client (used by webhook_service to POST to n8n)
+requests==2.31.0
+
+# Gemini AI — FIR generation
+# Get free key at: https://aistudio.google.com/app/apikey
+google-generativeai==0.4.0
+
+# Cloudinary — cloud storage for media files
+# Get free account at: https://cloudinary.com
+cloudinary==1.41.0
+
+# Production WSGI server (optional for hackathon)
+gunicorn==21.2.0
+
+# NOTE: No psycopg2 — project uses Django built-in SQLite database
