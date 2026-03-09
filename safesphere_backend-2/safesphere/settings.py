@@ -125,7 +125,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 # ── n8n Webhook ───────────────────────────────────────────────────────────────
 N8N_WEBHOOK_URL = os.getenv(
     "N8N_WEBHOOK_URL",
-    "http://localhost:5678/webhook/safesphere-emergency"
+    "https://tusharbhaambe.app.n8n.cloud/webhook-test/safesphere-emergency"
 )
 
 # ── Static & Internationalization ─────────────────────────────────────────────

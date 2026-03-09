@@ -33,7 +33,7 @@ class WebhookService:
         Expected payload keys:
             case_id, user_name, user_phone, user_email,
             latitude, longitude, timestamp,
-            evidence_url, evidence_count,
+            video_url, evidence_count,
             trusted_contacts (list of {name, phone, email})
 
         Returns:
@@ -42,8 +42,9 @@ class WebhookService:
         Raises:
             Exception if the webhook call fails critically
         """
-        if not self.webhook_url:
-            raise ValueError("N8N_WEBHOOK_URL is not configured.")
+        if not self.webhook_url or self.webhook_url.strip() == "":
+            logger.info("N8N_WEBHOOK_URL is not configured. Skipping webhook trigger.")
+            return {"status": "skipped", "reason": "webhook_url_not_configured"}
 
         logger.info(f"Triggering n8n webhook for case: {payload.get('case_id')}")
         logger.debug(f"Webhook URL: {self.webhook_url}")
@@ -78,13 +79,13 @@ class WebhookService:
                 }
 
         except requests.exceptions.ConnectionError:
-            logger.error(f"Could not connect to n8n webhook at {self.webhook_url}")
-            raise ConnectionError(f"n8n is not reachable at {self.webhook_url}")
+            logger.warning(f"Could not connect to n8n webhook at {self.webhook_url}")
+            return {"status": "error", "reason": "connection_failed"}
 
         except requests.exceptions.Timeout:
-            logger.error(f"n8n webhook timed out after {WEBHOOK_TIMEOUT}s")
-            raise TimeoutError("n8n webhook request timed out.")
+            logger.warning(f"n8n webhook timed out after {WEBHOOK_TIMEOUT}s")
+            return {"status": "error", "reason": "timeout"}
 
         except Exception as e:
-            logger.error(f"Unexpected error triggering webhook: {e}")
-            raise
+            logger.warning(f"Unexpected error triggering webhook: {e}")
+            return {"status": "error", "reason": str(e)}

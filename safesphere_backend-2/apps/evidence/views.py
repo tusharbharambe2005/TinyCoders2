@@ -2,6 +2,8 @@
 Evidence app views – handles multipart file upload, storage, and n8n webhook trigger.
 """
 import logging
+from django.utils import timezone
+from datetime import datetime
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -36,7 +38,20 @@ class UploadEvidenceView(APIView):
         case_id = request.data.get("case_id")
         latitude = request.data.get("latitude")
         longitude = request.data.get("longitude")
-        timestamp = request.data.get("timestamp")
+        timestamp_str = request.data.get("timestamp")
+        
+        # Parse and make timestamp timezone-aware
+        if timestamp_str:
+            try:
+                # Try parsing ISO format
+                timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                # Make timezone-aware if naive
+                if timezone.is_naive(timestamp):
+                    timestamp = timezone.make_aware(timestamp)
+            except (ValueError, AttributeError):
+                timestamp = timezone.now()
+        else:
+            timestamp = timezone.now()
 
         # ── Validate case ────────────────────────────────────────────────
         if not case_id:
@@ -96,15 +111,20 @@ class UploadEvidenceView(APIView):
 
         # ── Trigger n8n webhook ───────────────────────────────────────────
         primary_url = saved_evidence[0].file_url
+        
+        # Build webhook payload with all required fields
         webhook_payload = {
             "case_id": str(case_id),
             "user_name": case.user.name,
             "user_phone": case.user.phone,
             "user_email": case.user.email,
-            "latitude": str(latitude),
-            "longitude": str(longitude),
-            "timestamp": str(timestamp),
-            "evidence_url": primary_url,
+            "video_url": primary_url,  # Cloudinary URL or local path
+            "location_description": f"Location: {latitude}, {longitude}",
+            "latitude": float(latitude) if latitude else None,
+            "longitude": float(longitude) if longitude else None,
+            "start_time": str(timestamp) if timestamp else str(case.created_at),
+            "end_time": str(timestamp) if timestamp else str(case.created_at),
+            "police_station_name": "Nearest Police Station",  # Can be customized
             "evidence_count": len(saved_evidence),
             "trusted_contacts": [
                 {
